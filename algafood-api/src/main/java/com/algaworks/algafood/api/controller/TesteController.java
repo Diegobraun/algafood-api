@@ -13,6 +13,7 @@ import com.algaworks.algafood.domain.model.Cozinha;
 import com.algaworks.algafood.domain.model.Restaurante;
 import com.algaworks.algafood.domain.repository.CozinhaRepository;
 import com.algaworks.algafood.domain.repository.RestauranteRepository;
+import com.algaworks.algafood.infrastructure.repository.spec.RestauranteSpecs;
 
 @RestController
 @RequestMapping("/teste")
@@ -59,15 +60,29 @@ public class TesteController {
 		return cozinhaRepository.existsByNome(nome);
 	}
 	
-	@GetMapping("/restaurantes/count-por-cozinha")
-	public Integer restaurantesCountPorCozinha(Long cozinhaId){
-		return restauranteRepository.countByCozinhaId(cozinhaId);
-	}
-	
 	@GetMapping("/restaurantes/por-nome-e-frete")
 	public List<Restaurante> restaurantesPorNomeEFrete(String nome,
 			BigDecimal taxaFreteInicial, BigDecimal taxaFreteFinal){
 		return restauranteRepository.find(nome, taxaFreteInicial, taxaFreteFinal);
 	}
 	
+	@GetMapping("/restaurantes/count-por-cozinha")
+	public Integer restaurantesCountPorCozinha(Long cozinhaId){
+		return restauranteRepository.countByCozinhaId(cozinhaId);
+	}
+	
+	@GetMapping("/restaurantes/com-frete-gratis")
+	public List<Restaurante> restaurantesComFreteGratis(String nome){
+		return restauranteRepository.findComFreteGratis(nome);	
+	}
+	
+	@GetMapping("/restaurantes/primeiro")
+	public Optional<Restaurante> restaurantesPrimeiro(){
+		return restauranteRepository.buscarPrimeiro();	
+	}
+	
+	@GetMapping("/cozinhas/primeira")
+	public Optional<Cozinha> cozinhasPrimeira(){
+		return cozinhaRepository.buscarPrimeiro();	
+	}
 }
