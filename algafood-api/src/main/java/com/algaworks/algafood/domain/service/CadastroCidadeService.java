@@ -1,62 +1,59 @@
 package com.algaworks.algafood.domain.service;
 
-import java.util.Optional;
-
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
+import com.algaworks.algafood.domain.exception.EntidadeEmUsoException;
 import com.algaworks.algafood.domain.exception.EntidadeNaoEncontradaException;
-import com.algaworks.algafood.domain.exception.EntidadePrincipalNaoEncontradaException;
 import com.algaworks.algafood.domain.model.Cidade;
-import com.algaworks.algafood.domain.model.Estado;
 import com.algaworks.algafood.domain.repository.CidadeRepository;
 import com.algaworks.algafood.domain.repository.EstadoRepository;
 
 @Service
 public class CadastroCidadeService {
 	
+	private static final String MSG_ESTADO_NAO_ENCONTRADO = "O estado de id %d não existe!";
+
+	private static final String MSG_CIDADE_NAO_ENCONTRADA = "A cidade de id %d não existe!";
+	
+	private static final String MSG_CIDADE_EM_USO = "Cidade de código %d não pode ser removida pois está em uso";
+
 	@Autowired
 	private CidadeRepository cidadeRepository;
 	
 	@Autowired
 	private EstadoRepository estadoRepository;
 	
-	public Cidade adicionar(Cidade cidade) {
+	public Cidade salvar(Cidade cidade) {
 		if (!validarEstadoValido(cidade))
 			throw new EntidadeNaoEncontradaException(
-					String.format("O estado de id %d não existe!", cidade.getEstado().getId()));
+					String.format(MSG_ESTADO_NAO_ENCONTRADO, cidade.getEstado().getId()));
 		
 		return cidadeRepository.save(cidade);
 	}
 	
 	public boolean validarEstadoValido(Cidade cidade) {
-		Optional<Estado> estado = estadoRepository.findById(cidade.getEstado().getId());
-		return (estado.isPresent()) ? true : false;
-	}
-
-	public Cidade atualizar(Cidade cidade, Long id) {
-		Optional<Cidade> cidadeAtual = cidadeRepository.findById(id);
-		
-		if (!cidadeAtual.isPresent())
-			throw new EntidadePrincipalNaoEncontradaException(
-					String.format("A cidade de id %d não existe!", id));
-		
-		if (!validarEstadoValido(cidade))
-			throw new EntidadeNaoEncontradaException(
-					String.format("O estado de id %d não existe!", cidade.getEstado().getId()));
-		
-		BeanUtils.copyProperties(cidade, cidadeAtual.get(),"id");
-		return cidadeRepository.save(cidadeAtual.get());
+		return estadoRepository.findById(cidade.getEstado().getId()).isPresent();
 	}
 
 	public void remover(Long id) {
-		Optional<Cidade> cidade = cidadeRepository.findById(id);
-		
-		if (!cidade.isPresent())
-			throw new EntidadePrincipalNaoEncontradaException(
-					String.format("A cidade de id %d não existe!", id));
-		
-		cidadeRepository.deleteById(id);
+		try {
+			cidadeRepository.deleteById(id);
+		}catch (EmptyResultDataAccessException e) {
+			throw new EntidadeNaoEncontradaException(
+					String.format(MSG_CIDADE_NAO_ENCONTRADA, id));
+		}catch (DataIntegrityViolationException e) {
+			throw new EntidadeEmUsoException(
+					String.format(MSG_CIDADE_EM_USO, id));
+		}
 	}
+	
+	public Cidade buscarOuFalhar(Long id) {
+		return cidadeRepository.findById(id)
+				.orElseThrow(() -> new EntidadeNaoEncontradaException(
+						String.format(MSG_CIDADE_NAO_ENCONTRADA,id)));
+	}
+	
 }

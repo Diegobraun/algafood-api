@@ -3,11 +3,10 @@ package com.algaworks.algafood.api.controller;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,14 +15,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.algaworks.algafood.domain.exception.EntidadeNaoEncontradaException;
-import com.algaworks.algafood.domain.exception.EntidadePrincipalNaoEncontradaException;
 import com.algaworks.algafood.domain.model.Restaurante;
 import com.algaworks.algafood.domain.repository.RestauranteRepository;
 import com.algaworks.algafood.domain.service.CadastroRestauranteService;
-import com.algaworks.algafood.infrastructure.repository.spec.RestauranteSpecs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
@@ -42,50 +39,36 @@ public class RestauranteController{
 	}
 	
 	@GetMapping("/{restauranteId}")
-	public ResponseEntity<Restaurante> buscar(@PathVariable("restauranteId") Long id){
-		Optional<Restaurante> restaurante = restauranteRepository.findById(id);
-		
-		if (restaurante.isPresent())
-			return ResponseEntity.ok(restaurante.get());
-		
-		return ResponseEntity.notFound().build();
+	public Restaurante buscar(@PathVariable("restauranteId") Long id){
+		return cadastroRestaurante.buscarOuFalhar(id);
 	}
 	
 	@PostMapping
-	public ResponseEntity<?> adicionar(@RequestBody Restaurante restaurante){
-		try {
-			restaurante = cadastroRestaurante.salvar(restaurante);
-			return ResponseEntity.status(HttpStatus.CREATED).body(restaurante);
-		} catch(EntidadeNaoEncontradaException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
+	@ResponseStatus(HttpStatus.CREATED)
+	public Restaurante adicionar(@RequestBody Restaurante restaurante){
+		return cadastroRestaurante.salvar(restaurante);
 	}
 	
 	@PutMapping("/{restauranteId}")
-	public ResponseEntity<?> atualizar(@PathVariable("restauranteId") Long id,
+	public Restaurante atualizar(@PathVariable("restauranteId") Long id,
 			@RequestBody Restaurante restaurante){
-		try {
-			restaurante = cadastroRestaurante.atualizar(restaurante, id);
-			return ResponseEntity.status(HttpStatus.OK).body(restaurante);
-		}catch(EntidadePrincipalNaoEncontradaException e) {
-			return ResponseEntity.notFound().build();
-		}catch(EntidadeNaoEncontradaException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
+		Restaurante restauranteAtual = cadastroRestaurante.buscarOuFalhar(id);
+		
+		BeanUtils.copyProperties(restaurante, restauranteAtual,
+				"id","formasPagamento","endereco","dataCadastro");
+		
+		return cadastroRestaurante.salvar(restauranteAtual);
 	}
 	
 	@PatchMapping("/{restauranteId}")
-	public ResponseEntity<?> atualizarParcial (@PathVariable("restauranteId") Long id,
+	public Restaurante atualizarParcial (@PathVariable("restauranteId") Long id,
 			@RequestBody Map<String, Object> campos){
 		
-		Optional<Restaurante> restaurante = restauranteRepository.findById(id);
+		Restaurante restaurante = cadastroRestaurante.buscarOuFalhar(id);
 		
-		if (!restaurante.isPresent())
-			return ResponseEntity.notFound().build();
+		merge(campos, restaurante);
 		
-		merge(campos, restaurante.get());
-		
-		return atualizar(id, restaurante.get());
+		return atualizar(id, restaurante);
 	}
 	
 	private void merge(Map<String, Object> dadosOrigem, Restaurante restauranteDestino) {
@@ -102,9 +85,6 @@ public class RestauranteController{
 			
 			ReflectionUtils.setField(field, restauranteDestino, novoValor);
 		});
-		
-		
-		
 	}
 	
 	

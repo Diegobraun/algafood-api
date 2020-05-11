@@ -1,3 +1,35 @@
+
+set foreign_key_checks = 0;
+
+delete from cidade;
+delete from cozinha;
+delete from estado;
+delete from forma_pagamento;
+delete from grupo;
+delete from grupo_permissao;
+delete from permissao;
+delete from produto;
+delete from restaurante;
+delete from restaurante_forma_pagamento;
+delete from usuario;
+delete from usuario_grupo;
+delete from pedido;
+delete from item_pedido;
+
+set foreign_key_checks = 1;
+
+alter table cidade auto_increment=1;
+alter table cozinha auto_increment=1;
+alter table estado auto_increment=1;
+alter table forma_pagamento auto_increment=1;
+alter table grupo auto_increment=1;
+alter table permissao auto_increment=1;
+alter table produto auto_increment=1;
+alter table restaurante auto_increment=1;
+alter table usuario auto_increment=1;
+alter table pedido auto_increment=1;
+alter table item_pedido auto_increment=1;
+
 insert into cozinha (nome) values ('tailandesa');
 insert into cozinha (nome) values ('indiana');
 insert into cozinha (nome) values ('holandesa');
@@ -36,3 +68,13 @@ insert into restaurante_forma_pagamento (restaurante_id,forma_pagamento_id) valu
 insert into restaurante_forma_pagamento (restaurante_id,forma_pagamento_id) values (2,3);
 insert into restaurante_forma_pagamento (restaurante_id,forma_pagamento_id) values (3,2);
 insert into restaurante_forma_pagamento (restaurante_id,forma_pagamento_id) values (3,3);
+
+insert into usuario (data_cadastro,email, nome, senha) values (utc_timestamp,"diegobraun2000@gmail.com","Diego","12345");
+
+insert into pedido(sub_total,taxa_frete,valor_total,data_criacao,endereco_cep,endereco_bairro,endereco_logradouro,
+endereco_numero,endereco_cidade_id,status,usuario_cliente_id,restaurante_id,forma_pagamento_id)
+values(12,16,30,utc_timestamp,"93950000","união","Rua 29 de setembro","269",1,"CRIADO",1,1,1);
+ 
+insert into item_pedido(quantidade,preco_unitario,preco_total,pedido_id,produto_id) values (2,1.34,18.23,1,1);
+ 
+
