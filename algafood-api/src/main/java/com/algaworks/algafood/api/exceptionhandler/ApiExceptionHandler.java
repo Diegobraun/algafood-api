@@ -207,6 +207,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		String detail = "Um ou mais campos estão inválidos. Faça o preenchimento correto e tente novamente.";
 		
 		BindingResult bindingResult = ex.getBindingResult();
+		
 		List<Problem.Field> problemFields = bindingResult.getFieldErrors().stream()
 				.map(fieldError -> Problem.Field.builder()
 						.name(fieldError.getField())
