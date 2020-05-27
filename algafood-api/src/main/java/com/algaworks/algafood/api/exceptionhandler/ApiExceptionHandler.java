@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.algaworks.algafood.core.validation.ValidacaoException;
 import com.algaworks.algafood.domain.exception.EntidadeEmUsoException;
 import com.algaworks.algafood.domain.exception.EntidadeNaoEncontradaException;
 import com.algaworks.algafood.domain.exception.NegocioException;
@@ -214,25 +216,51 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		
 		BindingResult bindingResult = ex.getBindingResult();
 		
-		List<Problem.Field> problemFields = bindingResult.getFieldErrors().stream()
-				.map(fieldError -> {
-					String message = messageSource.getMessage(fieldError, LocaleContextHolder.getLocale());
-					
-					return Problem.Field.builder()
-						.name(fieldError.getField())
-						.userMessage(message)
-						.build();
-					})
-				.collect(Collectors.toList());
+		List<Problem.Object> problemObjects = getAllProblemObjects(bindingResult);
 		
 		Problem problem = createProblemBuilder(status, ProblemType.DADOS_INVALIDOS, detail)
 				.userMessage(detail)
-				.fields(problemFields)
+				.objects(problemObjects)
 				.build();
 		
 		return handleExceptionInternal(ex, problem, headers, status, request);
 	}
 	
+	@ExceptionHandler(ValidacaoException.class)
+	protected ResponseEntity<Object> handleValidacaoException(
+			MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+		
+		String detail = "Um ou mais campos estão inválidos. Faça o preenchimento correto e tente novamente.";
+		
+		BindingResult bindingResult = ex.getBindingResult();
+		
+		List<Problem.Object> problemObjects = getAllProblemObjects(bindingResult);
+		
+		Problem problem = createProblemBuilder(status, ProblemType.DADOS_INVALIDOS, detail)
+				.userMessage(detail)
+				.objects(problemObjects)
+				.build();
+		
+		return handleExceptionInternal(ex, problem, headers, status, request);
+	}
+	
+	private List<Problem.Object> getAllProblemObjects(BindingResult bindingResult){
+		return bindingResult.getAllErrors().stream()
+		.map(objectError -> {
+			String message = messageSource.getMessage(objectError, LocaleContextHolder.getLocale());
+			
+			String name = objectError.getObjectName();
+			
+			if (objectError instanceof FieldError) {
+				name = ((FieldError) objectError).getField();
+			}
+			return Problem.Object.builder()
+				.name(name)
+				.userMessage(message)
+				.build();
+			})
+		.collect(Collectors.toList());
+	}
 	@Override
 	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
 			HttpStatus status, WebRequest request) {
