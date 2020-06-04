@@ -122,6 +122,6 @@ public class CadastroCozinhaIT {
 	}
 	
 	private String getSingleCozinha() throws IOException {
-		return getContentFromResource("/json/cozinhaSingle.json");
+		return getContentFromResource("/json/cozinha-padrao.json");
 	}
 }
